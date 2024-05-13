@@ -181,13 +181,12 @@ namespace DTDLParserSample
             {
                 Logging.LogError($"{e.Tag}: {e.ToString()}");
             }
-
         }
 
         //
-        // Main body of the code
+        // main body of the program
         //
-        static async void RunOptions(Options opts)
+        static void RunOptions(Options opts)
         {
             //
             // Display Parser version for reference
@@ -207,10 +206,6 @@ namespace DTDLParserSample
             Logging.LogSuccess($"DTDL Parser (dtdl parser library version {dtdlParserVersion}");
 
             //
-            // Process input JSON file with simulated data payload
-            //
-            
-            //
             // Model ID from the payload
             //
             string modelId = String.Empty;
@@ -222,6 +217,9 @@ namespace DTDLParserSample
 
             try
             {
+                //
+                // Check to see if input data is specified.  This is to simulate input property payload.
+                //
                 if (opts.InputFile != string.Empty)
                 {
                     var fileInfo = new FileInfo(opts.InputFile);
@@ -286,14 +284,18 @@ namespace DTDLParserSample
                 return;
             }
 
-
-
             //
             // Parse model(s)
             //
+            if (String.IsNullOrEmpty(modelId))
+            {
+                Logging.LogError($"Model ID not specified: Exiting...");
+                return;
+            }    
+
 
             //
-            // Make sure Model Folder is valie
+            // Make sure Model Folder is valid
             //
 
             DirectoryInfo? dinfo = null;
@@ -335,7 +337,7 @@ namespace DTDLParserSample
 
 
             var properties = modelData.Where(r => r.Value.EntityKind == DTEntityKind.Property).ToList();
-            foreach ( var property in properties)
+            foreach (var property in properties)
             {
                 DTPropertyInfo propInfo = property.Value as DTPropertyInfo;
 
