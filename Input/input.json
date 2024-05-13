@@ -1,0 +1,7 @@
+{
+  "$modelId" : "dtmi:com:sony_semicon:aitrios:sss:edge:system:t3p;2",
+  "objectWithMinMaxInField" : {
+    "Field1_Integer" : 1000,
+    "Field2_Double" : 9.5
+  }
+}
