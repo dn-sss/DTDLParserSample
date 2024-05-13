@@ -21,7 +21,9 @@ namespace DTDLParserSample
         {
         }
 
-
+        //
+        // Reads the contents of Model Definition JSON File 
+        //
         public string GetModelContent(string dtmiPath)
         {
             var jsonModel = string.Empty;
@@ -43,12 +45,14 @@ namespace DTDLParserSample
             {
                 Logging.LogError($"Error accessing the target directory '{modelFolder}': \n{e.Message}");
                 return jsonModel;
-                //return Task.FromResult(jsonModel);
             }
 
             return jsonModel;
         }
 
+        //
+        // Parses DTDL file
+        //
         public IReadOnlyDictionary<Dtmi, DTEntityInfo> ParseModel(string dtmi, string modelFolder)
         {
             _modelFolder = modelFolder;
@@ -58,10 +62,12 @@ namespace DTDLParserSample
             // for now, just single model
             List<string> modelFileList = new List<string>();
 
+            // Convert to a local path based on Model ID
             string dtmiPath = DtmiToPath(dtmi);
 
             if (!string.IsNullOrEmpty(dtmiPath))
             {
+                // Read model contents
                 modelContent = GetModelContent(dtmiPath);
 
                 if (!string.IsNullOrEmpty(modelContent))
@@ -69,13 +75,12 @@ namespace DTDLParserSample
                     modelFileList.Add(modelContent);
                 }
 
-                //
-                // Create Model Parser
-                //
                 try
                 {
                     //
                     // Create Model Parser
+                    // For adding custom types, AllowUndefinedExtensions must be specified 'Always'
+                    // A function 'Resolver' will be called when model contents require additional parsing
                     //
                     ModelParser parser = new ModelParser(
                         new ParsingOptions()
@@ -85,6 +90,9 @@ namespace DTDLParserSample
                         }
                     );
 
+                    //
+                    // Parse DTDL
+                    //
                     parseResult = parser.Parse(modelFileList);
 
                 }
@@ -103,19 +111,15 @@ namespace DTDLParserSample
                 catch (Exception e)
                 {
                     Logging.LogError($"Error ParseModel(): {e.Message}");
-                    //foreach (var err in e.Errors)
-                    //{
-                    //    Logging.LogError($"{err.Message}");
-                    //}
-
                 }
             }
             return parseResult;
         }
 
-
+        //
+        // A callback function for additional resolution.
+        //
         public IEnumerable<string> Resolver(IReadOnlyCollection<Dtmi> dtmis)
-        //        public async IAsyncEnumerable<string> ParserDtmiResolverAsync(IReadOnlyCollection<Dtmi> dtmis, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             Dictionary<Dtmi, string> modelDefinitions = new();
             List<string> models = new();

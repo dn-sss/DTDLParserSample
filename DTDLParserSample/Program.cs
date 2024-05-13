@@ -415,7 +415,6 @@ namespace DTDLParserSample
                         //throw new ArgumentOutOfRangeException(nameof(propInfo.Schema), "Only schemas of type DTObjectInfocan is supported.");
                 }
 
-
                 if (propInfo.UndefinedProperties.Count > 0)
                 {
                     foreach (var undefinedProperty in propInfo.UndefinedProperties)
