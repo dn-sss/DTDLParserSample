@@ -4,38 +4,38 @@
     public static class Logging
     {
 
-        static public void LogOutPutNoCR(string s, ConsoleColor color = ConsoleColor.White)
+        static public void LogOutPutNoCR(string S, ConsoleColor Color = ConsoleColor.White)
         {
-            Console.ForegroundColor = color;
-            Console.Write(s);
+            Console.ForegroundColor = Color;
+            Console.Write(S);
             Console.ForegroundColor = ConsoleColor.White;
         }
 
-        static public void LogOutPut(string s, ConsoleColor color = ConsoleColor.White)
+        static public void LogOutPut(string S, ConsoleColor Color = ConsoleColor.White)
         {
-            Console.ForegroundColor = color;
-            Console.WriteLine(s);
+            Console.ForegroundColor = Color;
+            Console.WriteLine(S);
             Console.ForegroundColor = ConsoleColor.White;
         }
 
-        static public void LogError(string s)
+        static public void LogError(string S)
         {
-            LogOutPut(s, ConsoleColor.Red);
+            LogOutPut(S, ConsoleColor.Red);
         }
 
-        static public void LogError(Exception ex, string s)
+        static public void LogError(Exception Ex, string S)
         {
-            var exception = s + "\n" + ex.ToString();
+            var exception = S + "\n" + Ex.ToString();
             LogOutPut(exception, ConsoleColor.Red);
         }
 
-        static public void LogWarn(string s)
+        static public void LogWarn(string S)
         {
-            LogOutPut(s, ConsoleColor.DarkYellow);
+            LogOutPut(S, ConsoleColor.DarkYellow);
         }
-        static public void LogSuccess(string s)
+        static public void LogSuccess(string S)
         {
-            LogOutPut(s, ConsoleColor.Green);
+            LogOutPut(S, ConsoleColor.Green);
         }
     }
 }

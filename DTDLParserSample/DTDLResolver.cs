@@ -24,11 +24,11 @@ namespace DTDLParserSample
         //
         // Reads the contents of Model Definition JSON File 
         //
-        public string GetModelContent(string dtmiPath)
+        public string GetModelContent(string DtmiPath)
         {
             var jsonModel = string.Empty;
             var modelFolder = _modelFolder;
-            var filePath = Path.Join(modelFolder, dtmiPath);
+            var filePath = Path.Join(modelFolder, DtmiPath);
             var fileInfo = new FileInfo(filePath);
 
             try
@@ -53,9 +53,9 @@ namespace DTDLParserSample
         //
         // Parses DTDL file
         //
-        public IReadOnlyDictionary<Dtmi, DTEntityInfo> ParseModel(string dtmi, string modelFolder)
+        public IReadOnlyDictionary<Dtmi, DTEntityInfo> ParseModel(string Dtmi, string ModelFolder)
         {
-            _modelFolder = modelFolder;
+            _modelFolder = ModelFolder;
             string modelContent = string.Empty;
             IReadOnlyDictionary<Dtmi, DTEntityInfo>? parseResult = null;
 
@@ -63,7 +63,7 @@ namespace DTDLParserSample
             List<string> modelFileList = new List<string>();
 
             // Convert to a local path based on Model ID
-            string dtmiPath = DtmiToPath(dtmi);
+            string dtmiPath = DtmiToPath(Dtmi);
 
             if (!string.IsNullOrEmpty(dtmiPath))
             {
@@ -119,12 +119,12 @@ namespace DTDLParserSample
         //
         // A callback function for additional resolution.
         //
-        public IEnumerable<string> Resolver(IReadOnlyCollection<Dtmi> dtmis)
+        public IEnumerable<string> Resolver(IReadOnlyCollection<Dtmi> Dtmis)
         {
             Dictionary<Dtmi, string> modelDefinitions = new();
             List<string> models = new();
 
-            foreach (var dtmi in dtmis)
+            foreach (var dtmi in Dtmis)
             {
                 Logging.LogSuccess($"Parsing DTDL in {_modelFolder} for {dtmi}");
                 var dtmiPath = DtmiToPath(dtmi.AbsoluteUri);
@@ -137,18 +137,18 @@ namespace DTDLParserSample
         }
 
 
-        static private bool IsValidDtmi(string dtmi)
+        static private bool IsValidDtmi(string Dtmi)
         {
             // Regex defined at https://github.com/Azure/digital-twin-model-identifier#validation-regular-expressions
             Regex rx = new Regex(@"^dtmi:[A-Za-z](?:[A-Za-z0-9_]*[A-Za-z0-9])?(?::[A-Za-z](?:[A-Za-z0-9_]*[A-Za-z0-9])?)*;[1-9][0-9]{0,8}$");
-            return rx.IsMatch(dtmi);
+            return rx.IsMatch(Dtmi);
         }
 
-        static private string DtmiToPath(string dtmi)
+        static private string DtmiToPath(string Dtmi)
         {
-            if (IsValidDtmi(dtmi))
+            if (IsValidDtmi(Dtmi))
             {
-                return $"{dtmi.ToLowerInvariant().Replace(":", "\\").Replace(";", "-")}.json";
+                return $"{Dtmi.ToLowerInvariant().Replace(":", "\\").Replace(";", "-")}.json";
             }
             return string.Empty;
         }

@@ -30,15 +30,15 @@ namespace DTDLParserSample
             public bool Recursive { get; set; }
         }
 
-        private static object? TranslateValue(object? value) => value switch
+        private static object? TranslateValue(object? Value) => Value switch
         {
             JsonElement element => element.ValueKind switch
             {
                 JsonValueKind.String => element.GetString(),
                 JsonValueKind.Number => element.GetSingle(),
-                _ => value,
+                _ => Value,
             },
-            _ => value,
+            _ => Value,
         };
 
         //private static void PrintUndefinedType()
@@ -51,12 +51,12 @@ namespace DTDLParserSample
 
         //}
 
-        private static void CheckJsonElement(JsonElement value)
+        private static void CheckJsonElement(JsonElement Value)
         {
-            switch (value.ValueKind)
+            switch (Value.ValueKind)
             {
                 case JsonValueKind.Object:
-                    foreach (JsonProperty jsonProp in value.EnumerateObject())
+                    foreach (JsonProperty jsonProp in Value.EnumerateObject())
                     {
                         if (jsonProp.Value.ValueKind != JsonValueKind.Object)
                         {
@@ -70,7 +70,7 @@ namespace DTDLParserSample
                 case JsonValueKind.Array:
                     var index = 0;
 
-                    foreach (JsonElement arrayElement in value.EnumerateArray())
+                    foreach (JsonElement arrayElement in Value.EnumerateArray())
                     {
                         Logging.LogOutPut($"           Array : {index++}");
                         CheckJsonElement(arrayElement);
@@ -78,10 +78,10 @@ namespace DTDLParserSample
                     break;
 
                 case JsonValueKind.Number:
-                    Logging.LogOutPut($"{value.GetSingle()} (type = {value.ValueKind})");
+                    Logging.LogOutPut($"{Value.GetSingle()} (type = {Value.ValueKind})");
                     break;
                 case JsonValueKind.String:
-                    Logging.LogOutPut($"{value.GetString()} (type = {value.ValueKind})");
+                    Logging.LogOutPut($"{Value.GetString()} (type = {Value.ValueKind})");
                     break;
                 case JsonValueKind.True:
                 case JsonValueKind.False:
@@ -89,26 +89,26 @@ namespace DTDLParserSample
                     break;
 
                 default:
-                    throw new FormatException($"Error: unsupported JSON token [{value.ValueKind}]");
+                    throw new FormatException($"Error: unsupported JSON token [{Value.ValueKind}]");
             }
         }
 
-        private static void CheckJsonElement(string elementName, JsonElement jsonElement, object dtInfo)
+        private static void CheckJsonElement(string ElementName, JsonElement JsonElement, object DtInfo)
         {
-            switch (jsonElement.ValueKind)
+            switch (JsonElement.ValueKind)
             {
                 case JsonValueKind.Object:
-                    foreach (JsonProperty jsonProp in jsonElement.EnumerateObject())
+                    foreach (JsonProperty jsonProp in JsonElement.EnumerateObject())
                     {
                         if (jsonProp.Value.ValueKind != JsonValueKind.Object)
                         {
                             Logging.LogOutPutNoCR($"                 : {jsonProp.Name} = ");
                         }
 
-                        DTPropertyInfo propInfo = dtInfo as DTPropertyInfo;
-                        DTObjectInfo objInfo = propInfo.Schema as DTObjectInfo;
+                        DTPropertyInfo? propInfo = DtInfo as DTPropertyInfo;
+                        DTObjectInfo? obInfo = propInfo.Schema as DTObjectInfo;
 
-                        DTFieldInfo fieldInfo = objInfo.Fields.Where(x => x.Name == jsonProp.Name).FirstOrDefault();
+                        DTFieldInfo? fieldInfo = obInfo.Fields.FirstOrDefault(x => x.Name == jsonProp.Name);
                         CheckJsonElement(jsonProp.Name, jsonProp.Value, fieldInfo);
                     }
 
@@ -117,7 +117,7 @@ namespace DTDLParserSample
                 case JsonValueKind.Array:
                     var index = 0;
 
-                    foreach (JsonElement arrayElement in jsonElement.EnumerateArray())
+                    foreach (JsonElement arrayElement in JsonElement.EnumerateArray())
                     {
                         Logging.LogOutPut($"           Array : {index++}");
                         CheckJsonElement(arrayElement);
@@ -126,10 +126,10 @@ namespace DTDLParserSample
 
                 case JsonValueKind.Number:
                     {
-                        var value = jsonElement.GetSingle();
-                        Logging.LogOutPut($"{value} (type = {jsonElement.ValueKind})");
+                        var value = JsonElement.GetSingle();
+                        Logging.LogOutPut($"{value} (type = {JsonElement.ValueKind})");
 
-                        DTFieldInfo fieldInfo = dtInfo as DTFieldInfo;
+                        DTFieldInfo fieldInfo = DtInfo as DTFieldInfo;
 
                         if (fieldInfo != null &&  fieldInfo.UndefinedTypes.Contains("MinMax"))
                         {
@@ -152,7 +152,7 @@ namespace DTDLParserSample
 
                     break;
                 case JsonValueKind.String:
-                    Logging.LogOutPut($"{jsonElement.GetString()} (type = {jsonElement.ValueKind})");
+                    Logging.LogOutPut($"{JsonElement.GetString()} (type = {JsonElement.ValueKind})");
                     break;
                 case JsonValueKind.True:
                 case JsonValueKind.False:
@@ -160,13 +160,13 @@ namespace DTDLParserSample
                     break;
 
                 default:
-                    throw new FormatException($"Error: unsupported JSON token [{jsonElement.ValueKind}]");
+                    throw new FormatException($"Error: unsupported JSON token [{JsonElement.ValueKind}]");
             }
         }
 
-        static void Main(string[] args)
+        static void Main(string[] Args)
         {
-            CommandLine.Parser.Default.ParseArguments<Options>(args)
+            CommandLine.Parser.Default.ParseArguments<Options>(Args)
               .WithParsed(RunOptions)
               .WithNotParsed(HandleParseError);
         }
@@ -186,7 +186,7 @@ namespace DTDLParserSample
         //
         // main body of the program
         //
-        static void RunOptions(Options opts)
+        static void RunOptions(Options Opts)
         {
             //
             // Display Parser version for reference
@@ -220,9 +220,9 @@ namespace DTDLParserSample
                 //
                 // Check to see if input data is specified.  This is to simulate input property payload.
                 //
-                if (opts.InputFile != string.Empty)
+                if (Opts.InputFile != string.Empty)
                 {
-                    var fileInfo = new FileInfo(opts.InputFile);
+                    var fileInfo = new FileInfo(Opts.InputFile);
 
                     if (!fileInfo.Exists)
                     {
@@ -280,7 +280,7 @@ namespace DTDLParserSample
             }
             catch (Exception e)
             {
-                Logging.LogError($"Error accessing the input file '{opts.InputFile}': Exiting... \n{e.Message}");
+                Logging.LogError($"Error accessing the input file '{Opts.InputFile}': Exiting... \n{e.Message}");
                 return;
             }
 
@@ -301,21 +301,21 @@ namespace DTDLParserSample
 
             try
             {
-                if (opts.ModelFolder != string.Empty)
+                if (Opts.ModelFolder != string.Empty)
                 {
-                    dinfo = new DirectoryInfo(opts.ModelFolder);
+                    dinfo = new DirectoryInfo(Opts.ModelFolder);
                 }
 
                 if (dinfo != null && dinfo.Exists == false)
                 {
-                    Logging.LogError($"Specified directory '{opts.ModelFolder}' does not exist: Exiting...");
+                    Logging.LogError($"Specified directory '{Opts.ModelFolder}' does not exist: Exiting...");
                     return;
                 }
 
             }
             catch (Exception e)
             {
-                Logging.LogError($"Error accessing the target directory '{opts.ModelFolder}': Exiting... \n{e.Message}");
+                Logging.LogError($"Error accessing the target directory '{Opts.ModelFolder}': Exiting... \n{e.Message}");
                 return;
             }
 
