@@ -297,7 +297,6 @@ namespace DTDLParserSample
             //
             // Make sure Model Folder is valid
             //
-
             DirectoryInfo? dinfo = null;
 
             try
@@ -335,8 +334,8 @@ namespace DTDLParserSample
                 return;
             }
 
-
             var properties = modelData.Where(r => r.Value.EntityKind == DTEntityKind.Property).ToList();
+
             foreach (var property in properties)
             {
                 DTPropertyInfo propInfo = property.Value as DTPropertyInfo;
@@ -422,7 +421,7 @@ namespace DTDLParserSample
                     foreach (var undefinedProperty in propInfo.UndefinedProperties)
                     {
                         var value = TranslateValue(undefinedProperty.Value);
-                        Logging.LogOutPut($" Undefined Prop  : {undefinedProperty.Key} = {value}");
+                        Logging.LogOutPut($"  Undefined Prop : {undefinedProperty.Key} = {value}");
                     }
                 }
             }
