@@ -443,7 +443,7 @@ namespace DTDLParserSample
             foreach (var command in commands)
             {
                 Logging.LogOutPut("=================================================");
-                Logging.LogOutPut($"         Commman");
+                Logging.LogOutPut($"        Commmand");
 
                 DTCommandInfo commandInfo = command.Value as DTCommandInfo;
 
@@ -453,7 +453,9 @@ namespace DTDLParserSample
                 Logging.LogOutPut($"Command Name   : {commandInfo.Name}");
             }
 
-
+            //
+            // Process simulated payload against DTDL's MinMax settings
+            //
             Logging.LogOutPut("=================================================");
             Logging.LogOutPut($"      Input Data");
             Logging.LogOutPut($"        Property");
