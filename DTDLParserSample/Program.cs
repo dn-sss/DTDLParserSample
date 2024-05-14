@@ -614,11 +614,10 @@ namespace DTDLParserSample
 
                 var value = TranslateValue(element.Value);
 
-                Logging.LogOutPut($"            Name : {element.Name}");
+                Logging.LogOutPutHighLight(string.Format("{0, 16} : {1}", "Name", element.Name));
 
                 DTPropertyInfo propInfo = modelData.Where(r => r.Value.EntityKind == DTEntityKind.Property)
                     .Select(x => x.Value as DTPropertyInfo)
-                    .Where(x => x.Writable == true)
                     .FirstOrDefault(x => x.Name == element.Name);
 
                 if ((propInfo != null) && (value is JsonElement je))
