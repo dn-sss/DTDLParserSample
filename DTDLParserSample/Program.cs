@@ -60,7 +60,7 @@ namespace DTDLParserSample
                     {
                         if (jsonProp.Value.ValueKind != JsonValueKind.Object)
                         {
-                            Logging.LogOutPutNoCR($"                 : {jsonProp.Name} = ");
+                            Logging.LogOutPutNoCR(string.Format("{0, 16} : {1} = ", "", jsonProp.Name));
                         }
                         CheckJsonElement(jsonProp.Value);
                     }
@@ -72,16 +72,16 @@ namespace DTDLParserSample
 
                     foreach (JsonElement arrayElement in Value.EnumerateArray())
                     {
-                        Logging.LogOutPut($"           Array : {index++}");
+                        Logging.LogOutPut(string.Format("{0, 16} : {1} = ", "Array", index++));
                         CheckJsonElement(arrayElement);
                     }
                     break;
 
                 case JsonValueKind.Number:
-                    Logging.LogOutPut($"{Value.GetSingle()} (type = {Value.ValueKind})");
+                    Logging.LogOutPut(string.Format("{0, 16} : Type = {1} = ", Value.GetSingle(), Value.ValueKind));
                     break;
                 case JsonValueKind.String:
-                    Logging.LogOutPut($"{Value.GetString()} (type = {Value.ValueKind})");
+                    Logging.LogOutPut(string.Format("{0, 16} : Type = {1} = ", Value.GetString(), Value.ValueKind));
                     break;
                 case JsonValueKind.True:
                 case JsonValueKind.False:
@@ -102,7 +102,7 @@ namespace DTDLParserSample
                     {
                         if (jsonProp.Value.ValueKind != JsonValueKind.Object)
                         {
-                            Logging.LogOutPutNoCR($"                 : {jsonProp.Name} = ");
+                            Logging.LogOutPutNoCR(string.Format("{0, 16} : {1} = ", "", jsonProp.Name));
                         }
 
                         DTPropertyInfo? propInfo = DtInfo as DTPropertyInfo;
@@ -119,7 +119,7 @@ namespace DTDLParserSample
 
                     foreach (JsonElement arrayElement in JsonElement.EnumerateArray())
                     {
-                        Logging.LogOutPut($"           Array : {index++}");
+                        Logging.LogOutPut(string.Format("{0, 16} : {1} = ", "Array", index++));
                         CheckJsonElement(arrayElement);
                     }
                     break;
@@ -141,11 +141,11 @@ namespace DTDLParserSample
 
                             if (value > max || value < min)
                             {
-                                Logging.LogError ($"           Error : Value {value} outside of min ({min}) - max {max} range");
+                                Logging.LogError(string.Format("{0, 16} : Value {1} outside of min {2} - max {3} range", "Error", value, min, max));
                             }
                             else
                             {
-                                Logging.LogSuccess($"                 : Value {value} inside of min ({min}) - max {max} range");
+                                Logging.LogSuccess(string.Format("{0, 16} : Value {1} outside of min {2} - max {3} range", "", value, min, max));
                             }
                         }
                     }
@@ -341,10 +341,10 @@ namespace DTDLParserSample
                 DTPropertyInfo propInfo = property.Value as DTPropertyInfo;
 
                 Logging.LogOutPut("=================================================");
-                Logging.LogOutPut($"        Property");
-                Logging.LogOutPut($"    Display Name : {(propInfo.DisplayName.Count > 0 ? propInfo.DisplayName.FirstOrDefault().Value : "No Display Name")}");
-                Logging.LogOutPut($"            Name : {propInfo.Name}");
-                Logging.LogOutPut($"            Type : {propInfo.Schema}");
+                Logging.LogOutPut(string.Format("{0, 16}", "Property"));
+                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Display Name", (propInfo.DisplayName.Count > 0 ? propInfo.DisplayName.FirstOrDefault().Value : "<No Display Name>")));
+                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Name", propInfo.Name));
+                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Type", propInfo.Schema));
 
                 switch (propInfo.Schema)
                 {
@@ -354,7 +354,7 @@ namespace DTDLParserSample
                         {
                             foreach (var undefinedType in objInfo.UndefinedTypes)
                             {
-                                Logging.LogOutPut($"  Undefined Type : {undefinedType}");
+                                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Undefined Type", undefinedType));
                             }
                         }
 
@@ -370,7 +370,7 @@ namespace DTDLParserSample
                                 }
                                 else
                                 {
-                                    Logging.LogOutPut($"  Undefined Prop : {undefinedProperty.Key} = {value}");
+                                    Logging.LogOutPut(string.Format("{0, 16} : {1} = {2}", "Undefined Prop", undefinedProperty.Key, undefinedProperty.Value));
                                 }
 
 
@@ -383,7 +383,7 @@ namespace DTDLParserSample
 
                             foreach (var undefinedProperty in field.UndefinedProperties)
                             {
-                                Logging.LogOutPut($"  Undefined Prop : {undefinedProperty.Key} = {undefinedProperty.Value}");
+                                Logging.LogOutPut(string.Format("{0, 16} : {1} = {2}", "Undefined Prop", undefinedProperty.Key, undefinedProperty.Value));
                             }
                         }
 
@@ -395,7 +395,7 @@ namespace DTDLParserSample
                         {
                             foreach (var undefinedType in intInfo.UndefinedTypes)
                             {
-                                Logging.LogOutPut($"    Undefined Types (Object) : {undefinedType}");
+                                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Undefined Types", undefinedType));
                             }
                         }
 
@@ -407,7 +407,7 @@ namespace DTDLParserSample
                         {
                             foreach (var undefinedType in propInfo.UndefinedTypes)
                             {
-                                Logging.LogOutPut($"    Undefined Types : {undefinedType}");
+                                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Undefined Types", undefinedType));
                             }
                         }
 
@@ -420,7 +420,7 @@ namespace DTDLParserSample
                     foreach (var undefinedProperty in propInfo.UndefinedProperties)
                     {
                         var value = TranslateValue(undefinedProperty.Value);
-                        Logging.LogOutPut($"  Undefined Prop : {undefinedProperty.Key} = {value}");
+                        Logging.LogOutPut(string.Format("{0, 16} : {1} = {2}", "Undefined Prop", undefinedProperty.Key, value));
                     }
                 }
             }
@@ -428,37 +428,34 @@ namespace DTDLParserSample
             var telemetries = modelData.Where(r => r.Value.EntityKind == DTEntityKind.Telemetry).ToList();
             foreach (var telemetry in telemetries)
             {
-
                 Logging.LogOutPut("=================================================");
-                Logging.LogOutPut($"       Telemetry");
+                Logging.LogOutPut(string.Format("{0, 16}", "Telemetry"));
 
                 DTTelemetryInfo telemetryInfo = telemetry.Value as DTTelemetryInfo;
 
-                Logging.LogOutPut($"    Display Name : {(telemetryInfo.DisplayName.Count > 0 ? telemetryInfo.DisplayName.FirstOrDefault().Value : "No Display Name")}");
-                Logging.LogOutPut($"            Name : {telemetryInfo.Name}");
-                Logging.LogOutPut($"            Type : {telemetryInfo.Schema}");
+                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Display Name", (telemetryInfo.DisplayName.Count > 0 ? telemetryInfo.DisplayName.FirstOrDefault().Value : "<No Display Name>")));
+                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Name", telemetryInfo.Name));
+                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Type", telemetryInfo.Schema));
             }
 
             var commands = modelData.Where(r => r.Value.EntityKind == DTEntityKind.Command).ToList();
             foreach (var command in commands)
             {
                 Logging.LogOutPut("=================================================");
-                Logging.LogOutPut($"        Commmand");
+                Logging.LogOutPut(string.Format("{0, 16}", "Commmand"));
 
                 DTCommandInfo commandInfo = command.Value as DTCommandInfo;
 
-                Logging.LogOutPut($"    Display Name : {(commandInfo.DisplayName.Count > 0 ? commandInfo.DisplayName.FirstOrDefault().Value : "No Display Name")}");
-                Logging.LogOutPut($"            Name : {commandInfo.Name}");
-
-                Logging.LogOutPut($"Command Name   : {commandInfo.Name}");
+                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Display Name", (commandInfo.DisplayName.Count > 0 ? commandInfo.DisplayName.FirstOrDefault().Value : "<No Display Name>")));
+                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Command Name", commandInfo.Name));
             }
 
             //
             // Process simulated payload against DTDL's MinMax settings
             //
             Logging.LogOutPut("=================================================");
-            Logging.LogOutPut($"      Input Data");
-            Logging.LogOutPut($"        Property");
+            Logging.LogOutPut(string.Format("{0, 16}", "Input Data"));
+            Logging.LogOutPut(string.Format("{0, 16}", "Property"));
 
             foreach (var element in jsonDoc.RootElement.EnumerateObject())
             {
@@ -478,7 +475,7 @@ namespace DTDLParserSample
 
                 if ((propInfo != null) && (value is JsonElement je))
                 {
-                    Logging.LogOutPut($"            Type : {je.ValueKind.ToString()}");
+                    Logging.LogOutPut(string.Format("{0, 16} : {1}", "Type", je.ValueKind.ToString()));
                     CheckJsonElement(element.Name, je, propInfo);
                 }
             }
