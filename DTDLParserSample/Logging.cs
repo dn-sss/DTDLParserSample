@@ -18,6 +18,13 @@
             Console.ForegroundColor = ConsoleColor.White;
         }
 
+        static public void LogOutPutHighLight(string S, ConsoleColor Color = ConsoleColor.Cyan)
+        {
+            Console.ForegroundColor = Color;
+            Console.WriteLine(S);
+            Console.ForegroundColor = ConsoleColor.White;
+        }
+
         static public void LogError(string S)
         {
             LogOutPut(S, ConsoleColor.Red);

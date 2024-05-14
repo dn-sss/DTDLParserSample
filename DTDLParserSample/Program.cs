@@ -41,16 +41,6 @@ namespace DTDLParserSample
             _ => Value,
         };
 
-        //private static void PrintUndefinedType()
-        //{
-
-        //}
-
-        //private static void PrintUndefinedProperty()
-        //{
-
-        //}
-
         private static void CheckJsonElement(JsonElement Value)
         {
             switch (Value.ValueKind)
@@ -161,6 +151,103 @@ namespace DTDLParserSample
 
                 default:
                     throw new FormatException($"Error: unsupported JSON token [{JsonElement.ValueKind}]");
+            }
+        }
+
+        static void ProcessCoType(DTEntityInfo DtEntity)
+        {
+            if (DtEntity.UndefinedTypes.Count > 0)
+            {
+                foreach (var undefinedType in DtEntity.UndefinedTypes)
+                {
+                    Logging.LogOutPutHighLight(string.Format("{0, 16} : {1}", "CoType Type", undefinedType));
+                }
+            }
+            if (DtEntity.UndefinedProperties.Count > 0)
+            {
+                foreach (var undefinedProperty in DtEntity.UndefinedProperties)
+                {
+                    Logging.LogOutPutHighLight(string.Format("{0, 16} : {1} = {2}", "CoType Property", undefinedProperty.Key, undefinedProperty.Value));
+                }
+            }
+        }
+
+        static void ProcessDtEnum(DTEnumInfo DtEnum)
+        {
+            foreach (var enumValue in DtEnum.EnumValues)
+            {
+                Logging.LogOutPut(string.Format("{0, 16} : Name  = {1}", "", enumValue.Name));
+                Logging.LogOutPut(string.Format("{0, 16} : Value = {1}", "", enumValue.EnumValue));
+            }
+        }
+
+        static void ProcessDtField(DTFieldInfo DtField)
+        {
+            Logging.LogOutPut("----------------");
+            Logging.LogOutPut(string.Format("{0, 16} : Name = {1}", "Field", DtField.Name));
+            Logging.LogOutPut(string.Format("{0, 16} : Display Name = {1}", "", (DtField.DisplayName.Count > 0 ? DtField.DisplayName.FirstOrDefault().Value : "<No Display Name>")));
+            Logging.LogOutPut(string.Format("{0, 16} : Description = {1}", "", (DtField.Description.Count > 0 ? DtField.Description.FirstOrDefault().Value : "<No Description>")));
+            Logging.LogOutPut(string.Format("{0, 16} : Schema = {1}", "", DtField.Schema.EntityKind));
+            if (!String.IsNullOrEmpty(DtField.Comment))
+            {
+                Logging.LogOutPut(string.Format("{0, 16} : Comment = {1}", "", DtField.Comment));
+            }
+
+            ProcessCoType(DtField);
+
+            if (DtField.Schema != null)
+            {
+                ProcessDtSchema(DtField.Schema);
+            }
+        }
+
+        static void ProcessDtSchema(DTSchemaInfo DtSchema)
+        {
+            if (!String.IsNullOrEmpty(DtSchema.Comment))
+            {
+                Logging.LogOutPut(string.Format("{0, 16} : Comment = {1}", "", DtSchema.Comment));
+            }
+
+            switch (DtSchema.EntityKind)
+            {
+                case DTEntityKind.Object:
+                    {
+                        DTObjectInfo dtVal = (DTObjectInfo)DtSchema;
+
+                        ProcessCoType(DtSchema);
+
+                        foreach (var field in dtVal.Fields)
+                        {
+                            ProcessDtField(field);
+                        }
+                    }
+                    break;
+
+                case DTEntityKind.Array:
+                    {
+                        DTArrayInfo dtVal = (DTArrayInfo)DtSchema;
+                        ProcessDtSchema(dtVal.ElementSchema);
+                    }
+                    break;
+
+                case DTEntityKind.Enum:
+                    {
+                        DTEnumInfo dtVal = (DTEnumInfo)DtSchema;
+                        ProcessDtEnum(dtVal);
+
+                    }
+                    break;
+
+                case DTEntityKind.Integer:
+                case DTEntityKind.Double:
+                case DTEntityKind.String:
+                case DTEntityKind.Date:
+                case DTEntityKind.DateTime:
+                case DTEntityKind.Boolean:
+                    break;
+                default:
+                    Logging.LogWarn(string.Format("Skipping {0}", DtSchema.EntityKind.ToString()));
+                    break;
             }
         }
 
@@ -319,7 +406,6 @@ namespace DTDLParserSample
                 return;
             }
 
-
             //
             // Prepare to parse DTDL Model
             //
@@ -334,6 +420,59 @@ namespace DTDLParserSample
                 return;
             }
 
+            var interfaces = modelData.Where(r => r.Value.EntityKind == DTEntityKind.Property || r.Value.EntityKind == DTEntityKind.Telemetry || r.Value.EntityKind == DTEntityKind.Command).ToList();
+
+            foreach (var item in interfaces)
+            {
+                var val = item.Value;
+                Logging.LogOutPut("=================================================");
+                Logging.LogOutPutHighLight(string.Format("{0, 16} : {1}", "Interface Type", val.EntityKind));
+                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Display Name", (val.DisplayName.Count > 0 ? val.DisplayName.FirstOrDefault().Value : "<No Display Name>")));
+                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Description", (val.Description.Count > 0 ? val.Description.FirstOrDefault().Value : "<No Description>")));
+
+                if (!String.IsNullOrEmpty(val.Comment))
+                {
+                    Logging.LogOutPut(string.Format("{0, 16} : {1}", "Comment", val.Comment));
+                }
+
+
+                switch (val.EntityKind)
+                {
+                    case DTEntityKind.Property:
+                        {
+                            DTPropertyInfo dtVal = (DTPropertyInfo)val;
+                            Logging.LogOutPut(string.Format("{0, 16} : {1}", "Name", dtVal.Name));
+                            Logging.LogOutPut(string.Format("{0, 16} : {1}", "Schema", dtVal.Schema));
+                            ProcessDtSchema(dtVal.Schema);
+                        }
+                        break;
+                    case DTEntityKind.Telemetry:
+                        {
+                            DTTelemetryInfo dtVal = (DTTelemetryInfo)val;
+                            Logging.LogOutPut(string.Format("{0, 16} : {1}", "Name", dtVal.Name));
+                            Logging.LogOutPut(string.Format("{0, 16} : {1}", "Schema", dtVal.Schema));
+                            ProcessDtSchema(dtVal.Schema);
+                        }
+                        break;
+                    case DTEntityKind.Command:
+                        {
+                            DTCommandInfo dtVal = (DTCommandInfo)val;
+                            Logging.LogOutPut(string.Format("{0, 16} : {1}", "Name", dtVal.Name));
+
+                            if (dtVal.Request != null)
+                            {
+                                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Request Name", dtVal.Request.Name));
+                                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Schema", dtVal.Request.Schema));
+                                ProcessDtSchema(dtVal.Request.Schema);
+                            }
+                        }
+                        break;
+                }
+
+                ProcessCoType(val);
+            }
+
+#if old
             var properties = modelData.Where(r => r.Value.EntityKind == DTEntityKind.Property).ToList();
 
             foreach (var property in properties)
@@ -341,7 +480,7 @@ namespace DTDLParserSample
                 DTPropertyInfo propInfo = property.Value as DTPropertyInfo;
 
                 Logging.LogOutPut("=================================================");
-                Logging.LogOutPut(string.Format("{0, 16}", "Property"));
+                Logging.LogOutPutHighLight(string.Format("{0, 16} : {1}", "Interface Type", "Property"));
                 Logging.LogOutPut(string.Format("{0, 16} : {1}", "Display Name", (propInfo.DisplayName.Count > 0 ? propInfo.DisplayName.FirstOrDefault().Value : "<No Display Name>")));
                 Logging.LogOutPut(string.Format("{0, 16} : {1}", "Name", propInfo.Name));
                 Logging.LogOutPut(string.Format("{0, 16} : {1}", "Type", propInfo.Schema));
@@ -429,7 +568,7 @@ namespace DTDLParserSample
             foreach (var telemetry in telemetries)
             {
                 Logging.LogOutPut("=================================================");
-                Logging.LogOutPut(string.Format("{0, 16}", "Telemetry"));
+                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Interface Type", "Telemetry"));
 
                 DTTelemetryInfo telemetryInfo = telemetry.Value as DTTelemetryInfo;
 
@@ -442,14 +581,14 @@ namespace DTDLParserSample
             foreach (var command in commands)
             {
                 Logging.LogOutPut("=================================================");
-                Logging.LogOutPut(string.Format("{0, 16}", "Commmand"));
+                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Interface Type", "Commmand"));
 
                 DTCommandInfo commandInfo = command.Value as DTCommandInfo;
 
                 Logging.LogOutPut(string.Format("{0, 16} : {1}", "Display Name", (commandInfo.DisplayName.Count > 0 ? commandInfo.DisplayName.FirstOrDefault().Value : "<No Display Name>")));
                 Logging.LogOutPut(string.Format("{0, 16} : {1}", "Command Name", commandInfo.Name));
             }
-
+#endif
             //
             // Process simulated payload against DTDL's MinMax settings
             //
