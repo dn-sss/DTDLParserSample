@@ -603,6 +603,8 @@ namespace DTDLParserSample
             Logging.LogOutPutHighLight(string.Format("{0, 16}", "Input Data"));
             Logging.LogOutPutHighLight(string.Format("{0, 16}", "Property"));
 
+            // to do.  Refactor this to make it clearner.
+
             foreach (var element in jsonDoc.RootElement.EnumerateObject())
             {
                 if (element.Name.StartsWith("$"))
