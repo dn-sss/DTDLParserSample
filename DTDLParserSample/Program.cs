@@ -203,53 +203,61 @@ namespace DTDLParserSample
 
         static void ProcessDtSchema(DTSchemaInfo DtSchema)
         {
-            if (!String.IsNullOrEmpty(DtSchema.Comment))
+            try
             {
-                Logging.LogOutPut(string.Format("{0, 16} : Comment = {1}", "", DtSchema.Comment));
-            }
+                if (!String.IsNullOrEmpty(DtSchema.Comment))
+                {
+                    Logging.LogOutPut(string.Format("{0, 16} : Comment = {1}", "", DtSchema.Comment));
+                }
 
-            switch (DtSchema.EntityKind)
-            {
-                case DTEntityKind.Object:
-                    {
-                        DTObjectInfo dtVal = (DTObjectInfo)DtSchema;
-
-                        ProcessCoType(DtSchema);
-
-                        foreach (var field in dtVal.Fields)
+                switch (DtSchema.EntityKind)
+                {
+                    case DTEntityKind.Object:
                         {
-                            ProcessDtField(field);
+                            DTObjectInfo dtVal = (DTObjectInfo)DtSchema;
+
+                            ProcessCoType(DtSchema);
+
+                            foreach (var field in dtVal.Fields)
+                            {
+                                ProcessDtField(field);
+                            }
                         }
-                    }
-                    break;
+                        break;
 
-                case DTEntityKind.Array:
-                    {
-                        DTArrayInfo dtVal = (DTArrayInfo)DtSchema;
-                        ProcessDtSchema(dtVal.ElementSchema);
-                    }
-                    break;
+                    case DTEntityKind.Array:
+                        {
+                            DTArrayInfo dtVal = (DTArrayInfo)DtSchema;
+                            ProcessDtSchema(dtVal.ElementSchema);
+                        }
+                        break;
 
-                case DTEntityKind.Enum:
-                    {
-                        DTEnumInfo dtVal = (DTEnumInfo)DtSchema;
-                        ProcessDtEnum(dtVal);
+                    case DTEntityKind.Enum:
+                        {
+                            DTEnumInfo dtVal = (DTEnumInfo)DtSchema;
+                            ProcessDtEnum(dtVal);
 
-                    }
-                    break;
+                        }
+                        break;
 
-                case DTEntityKind.Integer:
-                case DTEntityKind.Double:
-                case DTEntityKind.String:
-                case DTEntityKind.Date:
-                case DTEntityKind.DateTime:
-                case DTEntityKind.Boolean:
-                    break;
-                default:
-                    Logging.LogWarn(string.Format("Skipping {0}", DtSchema.EntityKind.ToString()));
-                    break;
+                    case DTEntityKind.Integer:
+                    case DTEntityKind.Double:
+                    case DTEntityKind.String:
+                    case DTEntityKind.Date:
+                    case DTEntityKind.DateTime:
+                    case DTEntityKind.Boolean:
+                        break;
+                    default:
+                        Logging.LogWarn(string.Format("Skipping {0}", DtSchema.EntityKind.ToString()));
+                        break;
+                }
             }
-        }
+            catch (Exception e)
+            {
+                Logging.LogError($"Error Processing DTSchemaInfo in ProcessDtSchema()\n{e.Message}");
+                return;
+            }
+}
 
         static void Main(string[] Args)
         {
@@ -435,7 +443,6 @@ namespace DTDLParserSample
                     Logging.LogOutPut(string.Format("{0, 16} : {1}", "Comment", val.Comment));
                 }
 
-
                 switch (val.EntityKind)
                 {
                     case DTEntityKind.Property:
@@ -592,9 +599,9 @@ namespace DTDLParserSample
             //
             // Process simulated payload against DTDL's MinMax settings
             //
-            Logging.LogOutPut("=================================================");
-            Logging.LogOutPut(string.Format("{0, 16}", "Input Data"));
-            Logging.LogOutPut(string.Format("{0, 16}", "Property"));
+            Logging.LogOutPutHighLight("=================================================");
+            Logging.LogOutPutHighLight(string.Format("{0, 16}", "Input Data"));
+            Logging.LogOutPutHighLight(string.Format("{0, 16}", "Property"));
 
             foreach (var element in jsonDoc.RootElement.EnumerateObject())
             {
