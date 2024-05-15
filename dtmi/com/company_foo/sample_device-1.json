@@ -1,0 +1,7 @@
+{
+    "@context": "dtmi:dtdl:context;3",
+    "@id": "dtmi:com:company_foo:sample_device;1",
+    "@type": "Interface",
+    "extends": "dtmi:com:company_foo:sample_base_model;1",
+    "comment": "Edge System PoE"
+}

@@ -2,7 +2,7 @@
   "profiles": {
     "DTDLParserSample": {
       "commandName": "Project",
-      "commandLineArgs": "-d C:\\Work\\DTDL\\aitrios-dtdl-files-main -i ..\\..\\..\\..\\input\\input.json"
+      "commandLineArgs": "-d ..\\..\\..\\..\\ -i ..\\..\\..\\..\\input\\input.json"
     }
   }
 }

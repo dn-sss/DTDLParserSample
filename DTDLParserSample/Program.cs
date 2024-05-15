@@ -366,13 +366,13 @@ namespace DTDLParserSample
                 {
                     var fileInfo = new FileInfo(Opts.InputFile);
 
+                    Logging.LogOutPut($"Reading simulated data : '{fileInfo.FullName}'");
+
                     if (!fileInfo.Exists)
                     {
                         Logging.LogError($"{fileInfo.FullName} does not exist: Exiting...");
                         return;
                     }
-
-                    Logging.LogSuccess($"Reading simulated data : '{fileInfo.FullName}'");
 
                     //
                     // Read file contents
@@ -417,7 +417,7 @@ namespace DTDLParserSample
                         return;
                     }
 
-                    Logging.LogSuccess($"Found DTDL ID in '{fileInfo.FullName}' : '{modelId}'");
+                    Logging.LogSuccess($"Found DTDL ID '{modelId}' in '{fileInfo.FullName}'");
                 }
             }
             catch (Exception e)
@@ -466,7 +466,7 @@ namespace DTDLParserSample
             //
             DTDLResolver resolver = new DTDLResolver();
 
-            Logging.LogSuccess($"Parsing DTDL in '{dinfo.FullName}' for '{modelId}'");
+            Logging.LogOutPut($"Parsing DTDL in '{dinfo.FullName}' for '{modelId}'");
             var modelData = resolver.ParseModel(modelId, dinfo.FullName);
 
             if (modelData == null)
