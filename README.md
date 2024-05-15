@@ -141,3 +141,14 @@ DTDL v3 supports language extensions (https://github.com/Azure/opendigitaltwins-
       -	UndefinedTypes	        : Count = 1
         - [0]                   : "MinMax"
     ```
+
+## Sample Models
+
+`dtmi/com/company_foo` contains 2 JSON files.  
+
+- sample_base_model-1.json  
+  A base DTDL model
+  
+- sample_device-1.json  
+  An example of DTDL model for a device exnteded from base model above.
+
