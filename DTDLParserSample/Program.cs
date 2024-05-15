@@ -53,142 +53,151 @@ namespace DTDLParserSample
 
         static void ProcessJsonElement(DTEntityInfo DtEntity, string JsonElementName, JsonElement Je)
         {
-            switch (Je.ValueKind)
+            try
             {
-                case JsonValueKind.Object:
-                    {
-                        foreach (JsonProperty jsonProp in Je.EnumerateObject())
+                switch (Je.ValueKind)
+                {
+                    case JsonValueKind.Object:
                         {
-                            if (DtEntity is DTPropertyInfo)
+                            foreach (JsonProperty jsonProp in Je.EnumerateObject())
                             {
-                                DTPropertyInfo dtPropInfo = DtEntity as DTPropertyInfo;
-                                ProcessJsonElement(dtPropInfo.Schema, jsonProp.Name, jsonProp.Value);
-                            } 
-                            else if (DtEntity is DTObjectInfo)
-                            {
-                                DTObjectInfo dtObjInfo = DtEntity as DTObjectInfo;
+                                if (DtEntity is DTPropertyInfo)
+                                {
+                                    DTPropertyInfo dtPropInfo = DtEntity as DTPropertyInfo;
+                                    ProcessJsonElement(dtPropInfo.Schema, jsonProp.Name, jsonProp.Value);
+                                }
+                                else if (DtEntity is DTObjectInfo)
+                                {
+                                    DTObjectInfo dtObjInfo = DtEntity as DTObjectInfo;
 
-                                Logging.LogOutPutHighLight(string.Format("{0, 16} : Name  = {1}", "Field", JsonElementName));
+                                    Logging.LogOutPutHighLight(string.Format("{0, 16} : Name  = {1}", "Field", JsonElementName));
 
-                                var dtFieldInfo = dtObjInfo.Fields.First(f => f.Name == JsonElementName);
-                                ProcessJsonElement(dtFieldInfo, jsonProp.Name, jsonProp.Value);
+                                    var dtFieldInfo = dtObjInfo.Fields.First(f => f.Name == JsonElementName);
+                                    ProcessJsonElement(dtFieldInfo, jsonProp.Name, jsonProp.Value);
+                                }
                             }
                         }
-                    }
 
-                    break;
+                        break;
 
-                case JsonValueKind.Number:
+                    case JsonValueKind.Number:
 
-                    var val = Je.GetSingle();
+                        var val = Je.GetSingle();
 
-                    switch (DtEntity.EntityKind)
-                    {
-                        case DTEntityKind.Property:
-                            {
-                                Logging.LogOutPutHighLight(string.Format("{0, 16} : Name  = {1}", "Property", JsonElementName));
-                                Logging.LogOutPutHighLight(string.Format("{0, 16} : Value = {1}", "", val));
-                                DTPropertyInfo dtPropInfo = DtEntity as DTPropertyInfo;
-
-                                if (HasMinMax(dtPropInfo))
+                        switch (DtEntity.EntityKind)
+                        {
+                            case DTEntityKind.Property:
                                 {
-                                    var minmax = GetMinMax(dtPropInfo);
+                                    Logging.LogOutPutHighLight(string.Format("{0, 16} : Name  = {1}", "Property", JsonElementName));
+                                    Logging.LogOutPutHighLight(string.Format("{0, 16} : Value = {1}", "", val));
+                                    DTPropertyInfo dtPropInfo = DtEntity as DTPropertyInfo;
 
-                                    if (val > minmax.max || val < minmax.min)
+                                    if (HasMinMax(dtPropInfo))
                                     {
-                                        Logging.LogError(string.Format("{0, 16} : Invalid : Value {1} outside of min {2} - max {3} range", "", val, minmax.min, minmax.max));
-                                    }
-                                    else
-                                    {
-                                        Logging.LogSuccess(string.Format("{0, 16} : Valid : Value {1} within min {2} - max {3} range", "", val, minmax.min, minmax.max));
-                                    }
-                                }
-                            }
+                                        var minmax = GetMinMax(dtPropInfo);
 
-                            break;
-
-                        case DTEntityKind.Object:
-                            {
-                                Logging.LogOutPutHighLight(string.Format("{0, 16} : Name  = {1}", "Field", JsonElementName));
-                                Logging.LogOutPutHighLight(string.Format("{0, 16} : Value = {1}", "", val));
-
-                                DTObjectInfo dtObjInfo = DtEntity as DTObjectInfo;
-                                DTFieldInfo dtFieldInfo = dtObjInfo.Fields.FirstOrDefault(x => x.Name == JsonElementName);
-
-                                if (HasMinMax(dtFieldInfo))
-                                {
-                                    var minmax = GetMinMax(dtFieldInfo);
-
-                                    if (val > minmax.max || val < minmax.min)
-                                    {
-                                        Logging.LogError(string.Format("{0, 16} : Invalid : Value {1} outside of min {2} - max {3} range", "", val, minmax.min, minmax.max));
-                                    }
-                                    else
-                                    {
-                                        Logging.LogSuccess(string.Format("{0, 16} : Valid : Value {1} within min {2} - max {3} range", "", val, minmax.min, minmax.max));
-                                    }
-                                }
-                                else if (HasMinMax(dtObjInfo))
-                                {
-                                    float min = 0;
-                                    float max = 0; 
-                                    
-                                    var isArray = dtObjInfo.UndefinedProperties.FirstOrDefault(x => x.Key == "MinMaxArray");
-
-                                    if (isArray.Key == null)
-                                    {
-                                        var minmax = GetMinMax(dtObjInfo);
-                                        min = minmax.min;
-                                        max = minmax.max;
-                                    }
-                                    else
-                                    {
-                                        var array = isArray.Value;
-                                        foreach (var jsonProp in array.EnumerateArray())
+                                        if (val > minmax.max || val < minmax.min)
                                         {
-                                            var name = jsonProp.EnumerateObject().FirstOrDefault(s => s.Name == "name");
-
-                                            if (name.Value.GetString().Equals(JsonElementName))
-                                            {
-                                                var minValue = jsonProp.EnumerateObject().FirstOrDefault(s => s.Name == "minValue");
-                                                var maxValue = jsonProp.EnumerateObject().FirstOrDefault(s => s.Name == "maxValue");
-
-                                                min = minValue.Value.GetSingle();
-                                                max = maxValue.Value.GetSingle();
-                                                break;
-                                            }
+                                            Logging.LogError(string.Format("{0, 16} : Invalid : Value {1} outside of min {2} - max {3} range", "", val, minmax.min, minmax.max));
+                                        }
+                                        else
+                                        {
+                                            Logging.LogSuccess(string.Format("{0, 16} : Valid : Value {1} within min {2} - max {3} range", "", val, minmax.min, minmax.max));
                                         }
                                     }
-
-                                    if (val > max || val < min)
-                                    {
-                                        Logging.LogError(string.Format("{0, 16} : Invalid : Value {1} outside of min {2} - max {3} range", "", val, min, max));
-                                    }
-                                    else
-                                    {
-                                        Logging.LogSuccess(string.Format("{0, 16} : Valid : Value {1} within min {2} - max {3} range", "", val, min, max));
-                                    }
-
                                 }
-                            }
-                            break;
 
-                        case DTEntityKind.Field:
-                            {
-                                DTFieldInfo dtFieldInfo = DtEntity as DTFieldInfo;
+                                break;
 
-                                if (dtFieldInfo.Schema.EntityKind == DTEntityKind.Object)
+                            case DTEntityKind.Object:
                                 {
-                                    DTObjectInfo dtObjInfo = dtFieldInfo.Schema as DTObjectInfo;
+                                    Logging.LogOutPutHighLight(string.Format("{0, 16} : Name  = {1}", "Field", JsonElementName));
+                                    Logging.LogOutPutHighLight(string.Format("{0, 16} : Value = {1}", "", val));
 
-                                    ProcessJsonElement(dtObjInfo, JsonElementName, Je);
+                                    DTObjectInfo dtObjInfo = DtEntity as DTObjectInfo;
+                                    DTFieldInfo dtFieldInfo = dtObjInfo.Fields.FirstOrDefault(x => x.Name == JsonElementName);
+
+                                    if (HasMinMax(dtFieldInfo))
+                                    {
+                                        var minmax = GetMinMax(dtFieldInfo);
+
+                                        if (val > minmax.max || val < minmax.min)
+                                        {
+                                            Logging.LogError(string.Format("{0, 16} : Invalid : Value {1} outside of min {2} - max {3} range", "", val, minmax.min, minmax.max));
+                                        }
+                                        else
+                                        {
+                                            Logging.LogSuccess(string.Format("{0, 16} : Valid : Value {1} within min {2} - max {3} range", "", val, minmax.min, minmax.max));
+                                        }
+                                    }
+                                    else if (HasMinMax(dtObjInfo))
+                                    {
+                                        float min = 0;
+                                        float max = 0;
+
+                                        var isArray = dtObjInfo.UndefinedProperties.FirstOrDefault(x => x.Key == "MinMaxArray");
+
+                                        if (isArray.Key == null)
+                                        {
+                                            var minmax = GetMinMax(dtObjInfo);
+                                            min = minmax.min;
+                                            max = minmax.max;
+                                        }
+                                        else
+                                        {
+                                            var array = isArray.Value;
+                                            foreach (var jsonProp in array.EnumerateArray())
+                                            {
+                                                var name = jsonProp.EnumerateObject().FirstOrDefault(s => s.Name == "name");
+
+                                                if (name.Value.GetString().Equals(JsonElementName))
+                                                {
+                                                    var minValue = jsonProp.EnumerateObject().FirstOrDefault(s => s.Name == "minValue");
+                                                    var maxValue = jsonProp.EnumerateObject().FirstOrDefault(s => s.Name == "maxValue");
+
+                                                    min = minValue.Value.GetSingle();
+                                                    max = maxValue.Value.GetSingle();
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        if (val > max || val < min)
+                                        {
+                                            Logging.LogError(string.Format("{0, 16} : Invalid : Value {1} outside of min {2} - max {3} range", "", val, min, max));
+                                        }
+                                        else
+                                        {
+                                            Logging.LogSuccess(string.Format("{0, 16} : Valid : Value {1} within min {2} - max {3} range", "", val, min, max));
+                                        }
+
+                                    }
                                 }
-                            }
-                            break;
-                    }
-                    break;
-                default:
-                    break;
+                                break;
+
+                            case DTEntityKind.Field:
+                                {
+                                    DTFieldInfo dtFieldInfo = DtEntity as DTFieldInfo;
+
+                                    if (dtFieldInfo.Schema.EntityKind == DTEntityKind.Object)
+                                    {
+                                        DTObjectInfo dtObjInfo = dtFieldInfo.Schema as DTObjectInfo;
+
+                                        ProcessJsonElement(dtObjInfo, JsonElementName, Je);
+                                    }
+                                }
+                                break;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+            catch (Exception e)
+            {
+                Logging.LogError($"Error accessing '{JsonElementName}': Exiting... \n{e.Message}");
+                return;
             }
         }
 
@@ -524,10 +533,9 @@ namespace DTDLParserSample
             Logging.LogOutPutHighLight(string.Format("{0, 16}", "Input Data"));
             Logging.LogOutPutHighLight(string.Format("{0, 16}", "Property"));
 
-            // to do.  Refactor this to make it clearner.
+            
             foreach (var element in jsonDoc.RootElement.EnumerateObject())
             {
-
                 if (element.Name.StartsWith("$"))
                 {
                     continue;
