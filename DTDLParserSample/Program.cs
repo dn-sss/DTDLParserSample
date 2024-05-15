@@ -10,6 +10,9 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Xml.Linq;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Newtonsoft.Json;
+using System.Runtime.Serialization.Formatters;
 
 namespace DTDLParserSample
 {
@@ -30,131 +33,166 @@ namespace DTDLParserSample
             public bool Recursive { get; set; }
         }
 
-        private static object? TranslateValue(object? Value) => Value switch
+        static bool HasMinMax(DTEntityInfo DtEntity)
         {
-            JsonElement element => element.ValueKind switch
-            {
-                JsonValueKind.String => element.GetString(),
-                JsonValueKind.Number => element.GetSingle(),
-                _ => Value,
-            },
-            _ => Value,
-        };
+            bool ret = ((DtEntity.UndefinedTypes.Count != 0) && (DtEntity.UndefinedTypes.Contains("MinMax")));
 
-        private static void CheckJsonElement(JsonElement Value)
-        {
-            switch (Value.ValueKind)
-            {
-                case JsonValueKind.Object:
-                    foreach (JsonProperty jsonProp in Value.EnumerateObject())
-                    {
-                        if (jsonProp.Value.ValueKind != JsonValueKind.Object)
-                        {
-                            Logging.LogOutPutNoCR(string.Format("{0, 16} : {1} = ", "", jsonProp.Name));
-                        }
-                        CheckJsonElement(jsonProp.Value);
-                    }
-
-                    break;
-
-                case JsonValueKind.Array:
-                    var index = 0;
-
-                    foreach (JsonElement arrayElement in Value.EnumerateArray())
-                    {
-                        Logging.LogOutPut(string.Format("{0, 16} : {1} = ", "Array", index++));
-                        CheckJsonElement(arrayElement);
-                    }
-                    break;
-
-                case JsonValueKind.Number:
-                    Logging.LogOutPut(string.Format("{0, 16} : Type = {1} = ", Value.GetSingle(), Value.ValueKind));
-                    break;
-                case JsonValueKind.String:
-                    Logging.LogOutPut(string.Format("{0, 16} : Type = {1} = ", Value.GetString(), Value.ValueKind));
-                    break;
-                case JsonValueKind.True:
-                case JsonValueKind.False:
-                case JsonValueKind.Null:
-                    break;
-
-                default:
-                    throw new FormatException($"Error: unsupported JSON token [{Value.ValueKind}]");
-            }
+            return ret;
         }
 
-        private static void CheckJsonElement(string ElementName, JsonElement JsonElement, object DtInfo)
+        static (float min, float max) GetMinMax(DTEntityInfo DtEntity)
         {
-            switch (JsonElement.ValueKind)
+            var f = DtEntity.UndefinedProperties.Where(x => x.Key == "minValue").FirstOrDefault();
+            var min = f.Value.GetSingle();
+
+            f = DtEntity.UndefinedProperties.Where(x => x.Key == "maxValue").FirstOrDefault();
+            var max = f.Value.GetSingle();
+
+            return (min, max);
+        }
+
+        static void ProcessJsonElement(DTEntityInfo DtEntity, string JsonElementName, JsonElement Je)
+        {
+            switch (Je.ValueKind)
             {
                 case JsonValueKind.Object:
-                    foreach (JsonProperty jsonProp in JsonElement.EnumerateObject())
                     {
-                        if (jsonProp.Value.ValueKind != JsonValueKind.Object)
+                        foreach (JsonProperty jsonProp in Je.EnumerateObject())
                         {
-                            Logging.LogOutPutNoCR(string.Format("{0, 16} : {1} = ", "", jsonProp.Name));
-                        }
-
-                        DTPropertyInfo? propInfo = DtInfo as DTPropertyInfo;
-                        DTObjectInfo? obInfo = propInfo.Schema as DTObjectInfo;
-
-                        DTFieldInfo? fieldInfo = obInfo.Fields.FirstOrDefault(x => x.Name == jsonProp.Name);
-                        CheckJsonElement(jsonProp.Name, jsonProp.Value, fieldInfo);
-                    }
-
-                    break;
-
-                case JsonValueKind.Array:
-                    var index = 0;
-
-                    foreach (JsonElement arrayElement in JsonElement.EnumerateArray())
-                    {
-                        Logging.LogOutPut(string.Format("{0, 16} : {1} = ", "Array", index++));
-                        CheckJsonElement(arrayElement);
-                    }
-                    break;
-
-                case JsonValueKind.Number:
-                    {
-                        var value = JsonElement.GetSingle();
-                        Logging.LogOutPut($"{value} (type = {JsonElement.ValueKind})");
-
-                        DTFieldInfo fieldInfo = DtInfo as DTFieldInfo;
-
-                        if (fieldInfo != null &&  fieldInfo.UndefinedTypes.Contains("MinMax"))
-                        {
-                            var f = fieldInfo.UndefinedProperties.Where(x => x.Key == "minValue").FirstOrDefault();
-                            var min = f.Value.GetSingle();
-
-                            f = fieldInfo.UndefinedProperties.Where(x => x.Key == "maxValue").FirstOrDefault();
-                            var max = f.Value.GetSingle();
-
-                            if (value > max || value < min)
+                            if (DtEntity is DTPropertyInfo)
                             {
-                                Logging.LogError(string.Format("{0, 16} : Value {1} outside of min {2} - max {3} range", "Error", value, min, max));
-                            }
-                            else
+                                DTPropertyInfo dtPropInfo = DtEntity as DTPropertyInfo;
+                                ProcessJsonElement(dtPropInfo.Schema, jsonProp.Name, jsonProp.Value);
+                            } 
+                            else if (DtEntity is DTObjectInfo)
                             {
-                                Logging.LogSuccess(string.Format("{0, 16} : Value {1} outside of min {2} - max {3} range", "", value, min, max));
+                                DTObjectInfo dtObjInfo = DtEntity as DTObjectInfo;
+
+                                Logging.LogOutPutHighLight(string.Format("{0, 16} : Name  = {1}", "Field", JsonElementName));
+
+                                var dtFieldInfo = dtObjInfo.Fields.First(f => f.Name == JsonElementName);
+                                ProcessJsonElement(dtFieldInfo, jsonProp.Name, jsonProp.Value);
                             }
                         }
                     }
 
                     break;
-                case JsonValueKind.String:
-                    Logging.LogOutPut($"{JsonElement.GetString()} (type = {JsonElement.ValueKind})");
-                    break;
-                case JsonValueKind.True:
-                case JsonValueKind.False:
-                case JsonValueKind.Null:
-                    break;
 
+                case JsonValueKind.Number:
+
+                    var val = Je.GetSingle();
+
+                    switch (DtEntity.EntityKind)
+                    {
+                        case DTEntityKind.Property:
+                            {
+                                Logging.LogOutPutHighLight(string.Format("{0, 16} : Name  = {1}", "Property", JsonElementName));
+                                Logging.LogOutPutHighLight(string.Format("{0, 16} : Value = {1}", "", val));
+                                DTPropertyInfo dtPropInfo = DtEntity as DTPropertyInfo;
+
+                                if (HasMinMax(dtPropInfo))
+                                {
+                                    var minmax = GetMinMax(dtPropInfo);
+
+                                    if (val > minmax.max || val < minmax.min)
+                                    {
+                                        Logging.LogError(string.Format("{0, 16} : Invalid : Value {1} outside of min {2} - max {3} range", "", val, minmax.min, minmax.max));
+                                    }
+                                    else
+                                    {
+                                        Logging.LogSuccess(string.Format("{0, 16} : Valid : Value {1} within min {2} - max {3} range", "", val, minmax.min, minmax.max));
+                                    }
+                                }
+                            }
+
+                            break;
+
+                        case DTEntityKind.Object:
+                            {
+                                Logging.LogOutPutHighLight(string.Format("{0, 16} : Name  = {1}", "Field", JsonElementName));
+                                Logging.LogOutPutHighLight(string.Format("{0, 16} : Value = {1}", "", val));
+
+                                DTObjectInfo dtObjInfo = DtEntity as DTObjectInfo;
+                                DTFieldInfo dtFieldInfo = dtObjInfo.Fields.FirstOrDefault(x => x.Name == JsonElementName);
+
+                                if (HasMinMax(dtFieldInfo))
+                                {
+                                    var minmax = GetMinMax(dtFieldInfo);
+
+                                    if (val > minmax.max || val < minmax.min)
+                                    {
+                                        Logging.LogError(string.Format("{0, 16} : Invalid : Value {1} outside of min {2} - max {3} range", "", val, minmax.min, minmax.max));
+                                    }
+                                    else
+                                    {
+                                        Logging.LogSuccess(string.Format("{0, 16} : Valid : Value {1} within min {2} - max {3} range", "", val, minmax.min, minmax.max));
+                                    }
+                                }
+                                else if (HasMinMax(dtObjInfo))
+                                {
+                                    float min = 0;
+                                    float max = 0; 
+                                    
+                                    var isArray = dtObjInfo.UndefinedProperties.FirstOrDefault(x => x.Key == "MinMaxArray");
+
+                                    if (isArray.Key == null)
+                                    {
+                                        var minmax = GetMinMax(dtObjInfo);
+                                        min = minmax.min;
+                                        max = minmax.max;
+                                    }
+                                    else
+                                    {
+                                        var array = isArray.Value;
+                                        foreach (var jsonProp in array.EnumerateArray())
+                                        {
+                                            var name = jsonProp.EnumerateObject().FirstOrDefault(s => s.Name == "name");
+
+                                            if (name.Value.GetString().Equals(JsonElementName))
+                                            {
+                                                var minValue = jsonProp.EnumerateObject().FirstOrDefault(s => s.Name == "minValue");
+                                                var maxValue = jsonProp.EnumerateObject().FirstOrDefault(s => s.Name == "maxValue");
+
+                                                min = minValue.Value.GetSingle();
+                                                max = maxValue.Value.GetSingle();
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    if (val > max || val < min)
+                                    {
+                                        Logging.LogError(string.Format("{0, 16} : Invalid : Value {1} outside of min {2} - max {3} range", "", val, min, max));
+                                    }
+                                    else
+                                    {
+                                        Logging.LogSuccess(string.Format("{0, 16} : Valid : Value {1} within min {2} - max {3} range", "", val, min, max));
+                                    }
+
+                                }
+                            }
+                            break;
+
+                        case DTEntityKind.Field:
+                            {
+                                DTFieldInfo dtFieldInfo = DtEntity as DTFieldInfo;
+
+                                if (dtFieldInfo.Schema.EntityKind == DTEntityKind.Object)
+                                {
+                                    DTObjectInfo dtObjInfo = dtFieldInfo.Schema as DTObjectInfo;
+
+                                    ProcessJsonElement(dtObjInfo, JsonElementName, Je);
+                                }
+                            }
+                            break;
+                    }
+                    break;
                 default:
-                    throw new FormatException($"Error: unsupported JSON token [{JsonElement.ValueKind}]");
+                    break;
             }
         }
 
-        static void ProcessCoType(DTEntityInfo DtEntity)
+        static void ProcessCoType(DTEntityInfo DtEntity, int Indent = 0)
         {
             if (DtEntity.UndefinedTypes.Count > 0)
             {
@@ -172,7 +210,7 @@ namespace DTDLParserSample
             }
         }
 
-        static void ProcessDtEnum(DTEnumInfo DtEnum)
+        static void ProcessDtEnum(DTEnumInfo DtEnum, int Indent = 0)
         {
             foreach (var enumValue in DtEnum.EnumValues)
             {
@@ -181,33 +219,33 @@ namespace DTDLParserSample
             }
         }
 
-        static void ProcessDtField(DTFieldInfo DtField)
+        static void ProcessDtField(DTFieldInfo DtField, int Indent = 0)
         {
-            Logging.LogOutPut("----------------");
-            Logging.LogOutPut(string.Format("{0, 16} : Name = {1}", "Field", DtField.Name));
-            Logging.LogOutPut(string.Format("{0, 16} : Display Name = {1}", "", (DtField.DisplayName.Count > 0 ? DtField.DisplayName.FirstOrDefault().Value : "<No Display Name>")));
-            Logging.LogOutPut(string.Format("{0, 16} : Description = {1}", "", (DtField.Description.Count > 0 ? DtField.Description.FirstOrDefault().Value : "<No Description>")));
-            Logging.LogOutPut(string.Format("{0, 16} : Schema = {1}", "", DtField.Schema.EntityKind));
+            Logging.LogOutPut("----------------", IndentLevel:Indent);
+            Logging.LogOutPut(string.Format("{0, 16} : Name = {1}", "Field", DtField.Name), IndentLevel: Indent);
+            Logging.LogOutPut(string.Format("{0, 16} : Display Name = {1}", "", (DtField.DisplayName.Count > 0 ? DtField.DisplayName.FirstOrDefault().Value : "<No Display Name>")), IndentLevel: Indent);
+            Logging.LogOutPut(string.Format("{0, 16} : Description = {1}", "", (DtField.Description.Count > 0 ? DtField.Description.FirstOrDefault().Value : "<No Description>")), IndentLevel: Indent);
+            Logging.LogOutPut(string.Format("{0, 16} : Schema = {1}", "", DtField.Schema.EntityKind), IndentLevel: Indent);
             if (!String.IsNullOrEmpty(DtField.Comment))
             {
-                Logging.LogOutPut(string.Format("{0, 16} : Comment = {1}", "", DtField.Comment));
+                Logging.LogOutPut(string.Format("{0, 16} : Comment = {1}", "", DtField.Comment), IndentLevel: Indent);
             }
 
             ProcessCoType(DtField);
 
             if (DtField.Schema != null)
             {
-                ProcessDtSchema(DtField.Schema);
+                ProcessDtSchema(DtField.Schema, Indent + 1);
             }
         }
 
-        static void ProcessDtSchema(DTSchemaInfo DtSchema)
+        static void ProcessDtSchema(DTSchemaInfo DtSchema, int Indent = 0)
         {
             try
             {
                 if (!String.IsNullOrEmpty(DtSchema.Comment))
                 {
-                    Logging.LogOutPut(string.Format("{0, 16} : Comment = {1}", "", DtSchema.Comment));
+                    Logging.LogOutPut(string.Format("{0, 16} : Comment = {1}", "", DtSchema.Comment), IndentLevel:Indent);
                 }
 
                 switch (DtSchema.EntityKind)
@@ -220,7 +258,7 @@ namespace DTDLParserSample
 
                             foreach (var field in dtVal.Fields)
                             {
-                                ProcessDtField(field);
+                                ProcessDtField(field, Indent + 1);
                             }
                         }
                         break;
@@ -228,14 +266,14 @@ namespace DTDLParserSample
                     case DTEntityKind.Array:
                         {
                             DTArrayInfo dtVal = (DTArrayInfo)DtSchema;
-                            ProcessDtSchema(dtVal.ElementSchema);
+                            ProcessDtSchema(dtVal.ElementSchema, Indent + 1);
                         }
                         break;
 
                     case DTEntityKind.Enum:
                         {
                             DTEnumInfo dtVal = (DTEnumInfo)DtSchema;
-                            ProcessDtEnum(dtVal);
+                            ProcessDtEnum(dtVal, Indent + 1);
 
                         }
                         break;
@@ -450,7 +488,7 @@ namespace DTDLParserSample
                             DTPropertyInfo dtVal = (DTPropertyInfo)val;
                             Logging.LogOutPut(string.Format("{0, 16} : {1}", "Name", dtVal.Name));
                             Logging.LogOutPut(string.Format("{0, 16} : {1}", "Schema", dtVal.Schema));
-                            ProcessDtSchema(dtVal.Schema);
+                            ProcessDtSchema(dtVal.Schema, 0);
                         }
                         break;
                     case DTEntityKind.Telemetry:
@@ -458,7 +496,7 @@ namespace DTDLParserSample
                             DTTelemetryInfo dtVal = (DTTelemetryInfo)val;
                             Logging.LogOutPut(string.Format("{0, 16} : {1}", "Name", dtVal.Name));
                             Logging.LogOutPut(string.Format("{0, 16} : {1}", "Schema", dtVal.Schema));
-                            ProcessDtSchema(dtVal.Schema);
+                            ProcessDtSchema(dtVal.Schema, 0);
                         }
                         break;
                     case DTEntityKind.Command:
@@ -470,7 +508,7 @@ namespace DTDLParserSample
                             {
                                 Logging.LogOutPut(string.Format("{0, 16} : {1}", "Request Name", dtVal.Request.Name));
                                 Logging.LogOutPut(string.Format("{0, 16} : {1}", "Schema", dtVal.Request.Schema));
-                                ProcessDtSchema(dtVal.Request.Schema);
+                                ProcessDtSchema(dtVal.Request.Schema, 0);
                             }
                         }
                         break;
@@ -479,123 +517,6 @@ namespace DTDLParserSample
                 ProcessCoType(val);
             }
 
-#if old
-            var properties = modelData.Where(r => r.Value.EntityKind == DTEntityKind.Property).ToList();
-
-            foreach (var property in properties)
-            {
-                DTPropertyInfo propInfo = property.Value as DTPropertyInfo;
-
-                Logging.LogOutPut("=================================================");
-                Logging.LogOutPutHighLight(string.Format("{0, 16} : {1}", "Interface Type", "Property"));
-                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Display Name", (propInfo.DisplayName.Count > 0 ? propInfo.DisplayName.FirstOrDefault().Value : "<No Display Name>")));
-                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Name", propInfo.Name));
-                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Type", propInfo.Schema));
-
-                switch (propInfo.Schema)
-                {
-                    case DTObjectInfo objInfo:
-
-                        if (objInfo.UndefinedTypes.Count > 0)
-                        {
-                            foreach (var undefinedType in objInfo.UndefinedTypes)
-                            {
-                                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Undefined Type", undefinedType));
-                            }
-                        }
-
-                        if (objInfo.UndefinedProperties.Count > 0)
-                        {
-                            foreach (var undefinedProperty in objInfo.UndefinedProperties)
-                            {
-                                var value = TranslateValue(undefinedProperty.Value);
-
-                                if (value is JsonElement je && je.ValueKind == JsonValueKind.Array)
-                                {
-                                    CheckJsonElement(je);
-                                }
-                                else
-                                {
-                                    Logging.LogOutPut(string.Format("{0, 16} : {1} = {2}", "Undefined Prop", undefinedProperty.Key, undefinedProperty.Value));
-                                }
-
-
-                            }
-                        }
-
-                        foreach (DTFieldInfo field in objInfo.Fields)
-                        {
-                            Logging.LogOutPut($"           Field : Name = {(field.DisplayName.Count > 0 ? field.DisplayName.FirstOrDefault().Value : field.Name)}");
-
-                            foreach (var undefinedProperty in field.UndefinedProperties)
-                            {
-                                Logging.LogOutPut(string.Format("{0, 16} : {1} = {2}", "Undefined Prop", undefinedProperty.Key, undefinedProperty.Value));
-                            }
-                        }
-
-                        break;
-
-                    case DTIntegerInfo intInfo:
-
-                        if (intInfo.UndefinedTypes.Count > 0)
-                        {
-                            foreach (var undefinedType in intInfo.UndefinedTypes)
-                            {
-                                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Undefined Types", undefinedType));
-                            }
-                        }
-
-                        break;
-
-                    default:
-
-                        if (propInfo.UndefinedTypes.Count > 0)
-                        {
-                            foreach (var undefinedType in propInfo.UndefinedTypes)
-                            {
-                                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Undefined Types", undefinedType));
-                            }
-                        }
-
-                        break;
-                        //throw new ArgumentOutOfRangeException(nameof(propInfo.Schema), "Only schemas of type DTObjectInfocan is supported.");
-                }
-
-                if (propInfo.UndefinedProperties.Count > 0)
-                {
-                    foreach (var undefinedProperty in propInfo.UndefinedProperties)
-                    {
-                        var value = TranslateValue(undefinedProperty.Value);
-                        Logging.LogOutPut(string.Format("{0, 16} : {1} = {2}", "Undefined Prop", undefinedProperty.Key, value));
-                    }
-                }
-            }
-
-            var telemetries = modelData.Where(r => r.Value.EntityKind == DTEntityKind.Telemetry).ToList();
-            foreach (var telemetry in telemetries)
-            {
-                Logging.LogOutPut("=================================================");
-                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Interface Type", "Telemetry"));
-
-                DTTelemetryInfo telemetryInfo = telemetry.Value as DTTelemetryInfo;
-
-                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Display Name", (telemetryInfo.DisplayName.Count > 0 ? telemetryInfo.DisplayName.FirstOrDefault().Value : "<No Display Name>")));
-                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Name", telemetryInfo.Name));
-                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Type", telemetryInfo.Schema));
-            }
-
-            var commands = modelData.Where(r => r.Value.EntityKind == DTEntityKind.Command).ToList();
-            foreach (var command in commands)
-            {
-                Logging.LogOutPut("=================================================");
-                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Interface Type", "Commmand"));
-
-                DTCommandInfo commandInfo = command.Value as DTCommandInfo;
-
-                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Display Name", (commandInfo.DisplayName.Count > 0 ? commandInfo.DisplayName.FirstOrDefault().Value : "<No Display Name>")));
-                Logging.LogOutPut(string.Format("{0, 16} : {1}", "Command Name", commandInfo.Name));
-            }
-#endif
             //
             // Process simulated payload against DTDL's MinMax settings
             //
@@ -604,26 +525,41 @@ namespace DTDLParserSample
             Logging.LogOutPutHighLight(string.Format("{0, 16}", "Property"));
 
             // to do.  Refactor this to make it clearner.
-
             foreach (var element in jsonDoc.RootElement.EnumerateObject())
             {
+
                 if (element.Name.StartsWith("$"))
                 {
                     continue;
                 }
 
-                var value = TranslateValue(element.Value);
-
+                Logging.LogOutPutHighLight("----------------");
                 Logging.LogOutPutHighLight(string.Format("{0, 16} : {1}", "Name", element.Name));
 
                 DTPropertyInfo propInfo = modelData.Where(r => r.Value.EntityKind == DTEntityKind.Property)
                     .Select(x => x.Value as DTPropertyInfo)
                     .FirstOrDefault(x => x.Name == element.Name);
 
-                if ((propInfo != null) && (value is JsonElement je))
+                if (propInfo != null)
                 {
-                    Logging.LogOutPut(string.Format("{0, 16} : {1}", "Type", je.ValueKind.ToString()));
-                    CheckJsonElement(element.Name, je, propInfo);
+                    switch (element.Value.ValueKind)
+                    {
+                        case JsonValueKind.Object:
+                            ProcessJsonElement(propInfo, element.Name, element.Value);
+                            break;
+
+                        case JsonValueKind.Number:
+                            ProcessJsonElement(propInfo, element.Name, element.Value);
+                            break;
+
+                        default:
+                            Logging.LogWarn($"Unsupported JSON Value Kind : {element.Value.ValueKind}");
+                            break;
+                    }
+                }
+                else
+                {
+                    Logging.LogWarn($"Failed to find model for {element.Name}");
                 }
             }
         }

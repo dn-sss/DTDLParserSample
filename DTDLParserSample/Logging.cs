@@ -11,10 +11,11 @@
             Console.ForegroundColor = ConsoleColor.White;
         }
 
-        static public void LogOutPut(string S, ConsoleColor Color = ConsoleColor.White)
+        static public void LogOutPut(string S, ConsoleColor Color = ConsoleColor.White, int IndentLevel = 0)
         {
+            string indent = new string('\t', IndentLevel);
             Console.ForegroundColor = Color;
-            Console.WriteLine(S);
+            Console.WriteLine($"{indent}{S}");
             Console.ForegroundColor = ConsoleColor.White;
         }
 

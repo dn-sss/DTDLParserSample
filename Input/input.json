@@ -3,5 +3,19 @@
   "objectWithMinMaxInField" : {
     "Field1_Integer" : 1000,
     "Field2_Double" : 9.5
+  },
+  "simplePropertyWithMinMax" : 12,
+  "objectWithMinMax" : {
+    "IntegerField" : 10,
+    "DoubleField" : 1.2
+  },
+  "objectWithMinMaxArray" : {
+    "IntegerField" : 12,
+    "DoubleField" : 1.2
+  },
+  "device_states": {
+    "power_states" : {
+      "power_level" : 120
+    }
   }
 }
